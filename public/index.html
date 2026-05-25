@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DB Insights</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #333; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 20px; text-align: center; margin-bottom: 5px; border-radius: 8px; }
+    header h1 { font-size: 2.5em; margin-bottom: 10px; }
+    header p { font-size: 1.1em; opacity: 0.9; }
+    .controls { display: flex; gap: 20px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+    .tabs { display: flex; gap: 10px; border-bottom: 2px solid #e0e0e0; }
+    .tab-btn { padding: 12px 24px; background: none; border: none; cursor: pointer; font-size: 1em; color: #666; border-bottom: 3px solid transparent; transition: all 0.3s; }
+    .tab-btn.active { color: #667eea; border-bottom-color: #667eea; }
+    .tab-btn:hover { color: #667eea; }
+    .limit-selector { display: flex; gap: 10px; align-items: center; }
+    .limit-selector label { font-weight: 600; }
+    .limit-selector select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 1em; cursor: pointer; }
+    .content { display: none; }
+    .content.active { display: block; }
+    .toolbar { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .toolbar-left, .toolbar-right { display: flex; gap: 10px; align-items: center; }
+    .toolbar label { font-weight: 600; color: #3d4b89; }
+    .toolbar input, .toolbar select { min-width: 150px; padding: 12px 14px; border: 1px solid #d7d7ec; border-radius: 12px; background: #f7f8ff; color: #1f2a56; transition: border-color 0.2s, box-shadow 0.2s; }
+    .toolbar input:focus, .toolbar select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.14); }
+    .toolbar select { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, #3e4ad9 50%), linear-gradient(135deg, #3e4ad9 50%, transparent 50%); background-position: calc(100% - 18px) calc(50% - 3px), calc(100% - 14px) calc(50% - 3px); background-size: 6px 6px, 6px 6px; background-repeat: no-repeat; }
+    .toolbar button { padding: 12px 18px; border: none; border-radius: 12px; background: linear-gradient(135deg, #667eea 0%, #4f5ce5 100%); color: white; font-weight: 700; cursor: pointer; transition: transform 0.2s, background 0.2s, box-shadow 0.2s; box-shadow: 0 12px 24px rgba(102, 126, 234, 0.18); }
+    .toolbar button:disabled { background: #c5cbe9; cursor: not-allowed; box-shadow: none; }
+    .toolbar button:hover:not(:disabled) { transform: translateY(-1px); background: linear-gradient(135deg, #5a6de2 0%, #3f53d4 100%); }
+    .pagination { display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin-top: 16px; }
+    .pagination button { padding: 10px 14px; border: 1px solid #d7d7ec; background: white; color: #34448a; border-radius: 10px; cursor: pointer; transition: background 0.2s; }
+    .pagination button:hover:not(:disabled) { background: #eef2ff; }
+    .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+    table { width: 100%; border-collapse: collapse; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08); }
+    thead { background: #f8f9fa; font-weight: 600; }
+    th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+    th { text-align: center; }
+    td.numeric { text-align: right; }
+    tbody tr:hover { background: #f9f9f9; }
+    .table-summary { margin-bottom: 5px; font-size: 0.95em; color: #555; width: 100%; text-align: right; }
+    .table-responsive { overflow-x: auto; }
+    table { width: 100%; min-width: 720px; }
+    td.entity-name, th.entity-name { max-width: 32rem; min-width: 0; }
+    td.entity-name .clickable, th.entity-name { display: inline-block; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .clickable { cursor: pointer; color: #667eea; text-decoration: underline; }
+    .clickable:hover { color: #764ba2; }
+    .loading { text-align: center; padding: 40px; color: #666; }
+    .error { background: #fee; color: #c33; padding: 20px; border-radius: 4px; margin-bottom: 20px; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+    .modal.active { display: flex; }
+    .modal-content { background: white; padding: 30px; border-radius: 8px; max-width: 600px; max-height: 80vh; overflow-y: auto; position: relative; }
+    .modal-close { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5em; cursor: pointer; color: #666; }
+    .modal-title { font-size: 1.5em; margin-bottom: 20px; padding-right: 40px; }
+    .attributes-list { list-style: none; }
+    .attributes-list li { padding: 12px; background: #f5f5f5; margin-bottom: 10px; border-radius: 4px; word-break: break-all; font-family: monospace; font-size: 0.9em; }
+    .external-link { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #667eea; color: white; text-decoration: none; border-radius: 4px; transition: background 0.3s; }
+    .external-link:hover { background: #764ba2; }
+    .size-badge { display: inline-block; background: #e3f2fd; color: #1976d2; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: 600; }
+    .modal-actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .modal-actions button { min-width: 120px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>SQLite HA DB Usage</h1>
+      <p>Home Assistant Database Analysis Tool</p>
+    </header>
+    <div class="controls">
+      <div class="tabs">
+        <button class="tab-btn" data-tab="cleanup">Cleanup Guide</button>
+        <button class="tab-btn active" data-tab="tables">Tables</button>
+        <button class="tab-btn" data-tab="entities">Entities</button>
+        <button class="tab-btn" data-tab="integrations">Integrations</button>
+        <button class="tab-btn" data-tab="domains">Domains</button>
+      </div>
+    </div>
+    <div id="cleanup" class="content">
+      <div id="cleanup-content">
+         <div style="max-width: 900px; margin: 0 auto; padding: 20px; line-height: 1.8;">
+      <h2 style="color: #667eea; margin-bottom: 25px; font-size: 1.8em;">Database Cleanup Guide</h2>
+      
+      <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 25px; border-radius: 4px;">
+        <strong style="color: #856404;">⚠️ Important:</strong>
+        <p style="margin-top: 8px; color: #856404;">Before performing any cleanup operations, create a backup of your Home Assistant configuration!</p>
+      </div>
+
+      <h3 style="color: #333; margin-top: 30px; margin-bottom: 15px; font-size: 1.3em;">Step 0: Create a Backup</h3>
+      <p style="margin-bottom: 15px;">
+        Visit <strong><a href="/config/backup/backups?type=manual" target="_blank" style="color: #667eea; text-decoration: none;">Home Assistant Backups</a></strong> and create a manual backup before proceeding.
+      </p>
+
+      <h3 style="color: #333; margin-top: 30px; margin-bottom: 15px; font-size: 1.3em;">Step 1: Understanding the Recorder</h3>
+      <p style="margin-bottom: 15px;">
+        The <strong>recorder</strong> in <code style="background: #f5f5f5; padding: 2px 6px; border-radius: 3px;">configuration.yaml</code> controls what data is saved to the database:
+      </p>
+      <pre style="background: #f7f8ff; border: 1px solid #e1e4fb; border-radius: 4px; padding: 15px; overflow-x: auto; margin-bottom: 15px; color: #1f2a56;">recorder:
+  purge_keep_days: 30
+  db_url: !secret recorder_db_url
+  exclude:
+    entity_globs:
+      - "sensor.weather_*"
+    domains:
+      - automation
+      - script</pre>
+      
+      <div style="background: #fee; border-left: 4px solid #c33; padding: 15px; margin-bottom: 15px; border-radius: 4px;">
+        <strong style="color: #c33;">⚠️ Warning:</strong>
+        <p style="margin-top: 8px; color: #c33;">Avoid using <code style="background: #fff0f0; padding: 2px 6px; border-radius: 3px;">include</code> in the recorder config. 
+          Once you use include, only entities mentioned as included will be recorded, all other will now be excluded by default.</p>
+      </div>
+
+      <p>See <a href="https://www.home-assistant.io/integrations/recorder/" target="_blank" style="color: #667eea; text-decoration: none;">the official Recorder documentation</a> for full reference</p>
+
+      <p style="margin-bottom: 15px;">
+        Use the <strong>Generate YAML</strong> feature in the Entities and Domains tabs to help configure exclusions based on storage usage analysis.
+      </p>
+
+      <h3 style="color: #333; margin-top: 30px; margin-bottom: 15px; font-size: 1.3em;">Step 2: Understand what takes space in your database</h3>
+      <div><p style="margin-bottom: 15px;">
+        Navigate to the tabs of this plugin to understand what takes some space in your database. You can sort and filter to understand your entities.
+      </p>
+       <ul style="padding-left: 40px">
+           <li><b>Tables</b>: gives an overview of your database table size. You can get details by hovering on the column title.</li>
+           <li><b>Entitied</b>: this main screen gives you insights about your entities. The sizes shown are estimated on rows average size, so you will see a small difference between estimation and actual database size.</li>
+           <li><b>Integrations</b> and <b>Domains</b>: sums entities by integrations and domains to get more understanding.</li>
+        </ul></div>
+    
+      <h3 style="color: #333; margin-top: 30px; margin-bottom: 15px; font-size: 1.3em;">Step 3: Purge Historical Data</h3>
+      <p style="margin-bottom: 15px;">
+        Go to <strong><a href="/config/developer-tools/action" target="_blank" style="color: #667eea; text-decoration: none;">Home Assistant Developer Tools → Actions</a></strong> and search for <strong>recorder.purge</strong>:
+      </p>
+      <ol style="margin-left: 20px; margin-bottom: 15px;">
+        <li style="margin-bottom: 10px;">Uncheck <strong>"Keep days"</strong> checkbox (or this may remove some ata you wanted to keep)</li>
+        <li style="margin-bottom: 10px;">Check <strong>"Repack"</strong> checkbox (this defragments the database)</li>
+        <li style="margin-bottom: 10px;">Leave <strong>"Exclude devices"</strong> unchecked unless you have specific devices to exclude</li>
+        <li style="margin-bottom: 10px;">Check <strong>"Apply filter"</strong> to apply recorder config exclusions</li>
+        <li style="margin-bottom: 10px;">Click <strong>"Call Service"</strong></li>
+        <li style="margin-bottom: 10px;">Restart Home Assistant after the purge completes</li>
+      </ol>
+
+      <p style="margin-bottom: 15px; color: #666; font-size: 0.95em;">
+        <strong>Note:</strong> The purge operation only removes <strong>historical states</strong>, not statistics.
+      </p>
+
+      <h3 style="color: #333; margin-top: 30px; margin-bottom: 15px; font-size: 1.3em;">Step 4: Clean Up Statistics</h3>
+      <p style="margin-bottom: 15px;">
+        Since <strong>recorder.purge</strong> doesn't remove statistics, use the <strong><a href="/config/developer-tools/statistics" target="_blank" style="color: #667eea; text-decoration: none;">Statistics Tool</a></strong>:
+      </p>
+      <ol style="margin-left: 20px; margin-bottom: 15px;">
+        <li style="margin-bottom: 10px;">Click <strong>"Select"</strong> button</li>
+        <li style="margin-bottom: 10px;">Choose <strong>"Select all problematic statistics"</strong></li>
+        <li style="margin-bottom: 10px;">Review the list of selected entities carefully</li>
+        <li style="margin-bottom: 10px;">Click <strong>"Delete selected statistics"</strong></li>
+        <li style="margin-bottom: 10px;">Confirm the deletion</li>
+      </ol>
+
+      <h3 style="color: #333; margin-top: 30px; margin-bottom: 15px; font-size: 1.3em;">Step 5: Final Cleanup</h3>
+      <p style="margin-bottom: 15px;">
+        To further optimize the database:
+      </p>
+      <ol style="margin-left: 20px; margin-bottom: 15px;">
+        <li style="margin-bottom: 10px;">Run <strong>recorder.purge</strong> one more time with the same settings</li>
+        <li style="margin-bottom: 10px;">Restart Home Assistant again</li>
+        <li style="margin-bottom: 10px;">Refresh this tool to verify the database size reduction</li>
+      </ol>
+
+      <div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 15px; margin-top: 25px; border-radius: 4px;">
+        <strong style="color: #1565c0;">✓ Success:</strong>
+        <p style="margin-top: 8px; color: #1565c0;">Your database should now be significantly smaller! Monitor the storage and adjust your recorder exclusions based on what's consuming the most space.</p>
+      </div>
+
+      <div style="background: #f0f0f0; padding: 15px; margin-top: 25px; border-radius: 4px; font-size: 0.9em; color: #666;">
+        <strong>Troubleshooting:</strong>
+        <ul style="margin-left: 20px; margin-top: 10px;">
+          <li style="margin-bottom: 8px;">If the database size doesn't change much, you may be excluding important entities. Review your recorder config.</li>
+          <li style="margin-bottom: 8px;">Some integrations may create entities automatically. Check the Integrations tab to identify heavy consumers.</li>
+          <li style="margin-bottom: 8px;">Consider excluding entire domains (like <code style="background: #e0e0e0; padding: 2px 6px; border-radius: 3px;">automation</code>, <code style="background: #e0e0e0; padding: 2px 6px; border-radius: 3px;">script</code>) that generate many state changes.</li>
+        </ul>
+      </div>
+    </div>
+      </div>
+    </div>
+    <div id="tables" class="content active">
+      <div id="tables-content"></div>
+    </div>
+    <div id="entities" class="content">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button id="generate-yaml-btn" disabled>Generate YAML</button>
+          <span id="selection-count"></span>
+        </div>
+        <div class="toolbar-right">
+            <label for="entity-filter">Filter entities:</label>
+          <input id="entity-filter" type="search" placeholder="Search by entity name" />
+          <label for="integration-filter"><!--Integration:--></label>
+          <select id="integration-filter">
+            <option value="">All integrations</option>
+          </select>
+          <label for="domain-filter"><!--Domain:--></label>
+          <select id="domain-filter">
+            <option value="">All domains</option>
+          </select>
+          <label for="limit">Size:</label>
+          <select id="limit">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+            <option value="500">500</option>
+            <option value="0">All entities</option>
+          </select>
+        </div>
+      </div>
+      <div id="entities-content"></div>
+      <div id="entity-pagination" class="pagination"></div>
+    </div>
+    <div id="integrations" class="content">
+      <div id="integrations-content"></div>
+    </div>
+    <div id="domains" class="content">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button id="generate-domain-yaml-btn" disabled>Generate YAML</button>
+          <span id="domain-selection-count"></span>
+        </div>
+      </div>
+      <div id="domains-content"></div>
+    </div>
+  </div>
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close">&times;</button>
+      <h2 class="modal-title"></h2>
+      <ul class="attributes-list"></ul>
+      <a class="external-link" target="_blank" rel="noopener">Open in Home Assistant</a>
+    </div>
+  </div>
+  <div id="yaml-modal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close">&times;</button>
+      <h2 class="modal-title">Generated recorder YAML</h2>
+      <pre id="yaml-output" style="background: #f7f8ff; padding: 20px; border-radius: 12px; color: #1f2a56; white-space: pre-wrap; word-break: break-word; border: 1px solid #e1e4fb; min-height: 180px; margin-bottom: 20px;">No YAML generated yet.</pre>
+      <div class="modal-actions">
+        <button id="copy-yaml-btn">Copy YAML</button>
+        <button id="close-yaml-modal-btn" style="background: #eef2ff; color: #34448a; box-shadow: none;">Close</button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./public",
+    "module": "esnext",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"]
+  },
+  "include": ["src/app/**/*.ts"],
+  "exclude": ["node_modules", "dist", "tests"]
+}
