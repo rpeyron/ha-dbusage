@@ -29,7 +29,7 @@ export function buildIntegrationsHtml(summary: { available: boolean; integration
       <tbody>${summary.integrations.map((integration) => {
         const percent = totalDataSize > 0 ? (integration.estimatedSizeBytes / totalDataSize) * 100 : 0;
         return `<tr>
-          <td><a href="#entities?integration=${encodeURIComponent(integration.integration)}">${escapeHtml(integration.integration)}</a></td>
+          <td>${escapeHtml(integration.integration)}</td>
           <td class="numeric"><a href="#entities?integration=${encodeURIComponent(integration.integration)}">${integration.entityCount}</a></td>
           <td class="numeric">${formatSizeBytes(integration.estimatedSizeBytes)} (${percent.toFixed(1)}%)</td>
         </tr>`;

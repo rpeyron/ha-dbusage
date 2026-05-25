@@ -25,12 +25,12 @@ export function buildDomainsHtml(summary: { available: boolean; domains: DomainS
       SQLite Data: <strong>${formatSizeBytes(totalDataSize)}</strong> ·
       Total estimated domains: <strong>${formatSizeBytes(totalDomainEstimatedSize)}</strong>
     </div><table><thead>
-      <tr><th><input id="domain-header-checkbox" type="checkbox" /></th><th>Domain</th><th>Entities</th><th title="Estimated size = attributes size + average state row size × state count + estimated statistics row size">Estimated size</th></tr></thead>
+      <tr><th style="text-align: left;"><input id="domain-header-checkbox" type="checkbox" /></th><th>Domain</th><th>Entities</th><th title="Estimated size = attributes size + average state row size × state count + estimated statistics row size">Estimated size</th></tr></thead>
       <tbody>${summary.domains.map((domain) => {
         const percent = totalDataSize > 0 ? (domain.estimatedSizeBytes / totalDataSize) * 100 : 0;
         return `<tr>
           <td><input class="domain-checkbox" type="checkbox" data-domain="${escapeAttr(domain.domain)}" /></td>
-          <td><a href="#entities?domain=${encodeURIComponent(domain.domain)}">${escapeHtml(domain.domain)}</a></td>
+          <td>${escapeHtml(domain.domain)}</td>
           <td class="numeric"><a href="#entities?domain=${encodeURIComponent(domain.domain)}">${domain.entityCount}</a></td>
           <td class="numeric">${formatSizeBytes(domain.estimatedSizeBytes)} (${percent.toFixed(1)}%)</td>
         </tr>`;

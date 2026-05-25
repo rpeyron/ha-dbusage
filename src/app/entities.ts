@@ -248,7 +248,6 @@ export function buildEntitiesTableHtml(
   currentLimit: number,
   entitySortBy: string,
   entitySortOrder: string,
-  currentLimitValue: number,
 ): string {
   const displayedEntities = currentLimit > 0 && entities.length > currentLimit ? entities.slice(0, currentLimit) : entities;
   const entityHasMore = currentLimit > 0 && entities.length > currentLimit;
@@ -269,9 +268,9 @@ export function buildEntitiesTableHtml(
     </tr></thead>
     <tbody>${displayedEntities.map((e) => `<tr>
       <td><input type="checkbox" class="entity-checkbox" data-entity="${escapeAttr(e.entity)}"></td>
-      <td class="entity-name"><span class="clickable entity-link" title="${escapeAttr(e.entity)}" data-entity="${escapeAttr(e.entity)}">${escapeHtml(e.entity)}</span></td>
+      <td class="entity-name"><span class="entity-link" title="${escapeAttr(e.entity)}" data-entity="${escapeAttr(e.entity)}">${escapeHtml(e.entity)}</span></td>
       <td class="numeric"><span class="clickable history-link" data-entity="${escapeAttr(e.entity)}">${e.statesCount}</span></td>
-      <td class="numeric"><span class="clickable attributes-link" data-entity="${escapeAttr(e.entity)}" data-limit="${currentLimitValue}">${e.attributesCount}</span></td>
+      <td class="numeric"><span class="clickable attributes-link" data-entity="${escapeAttr(e.entity)}" data-limit="${currentLimit}">${e.attributesCount}</span></td>
       <td class="numeric">${formatSizeBytes(e.attributesSizeBytes)}</td>
       <td class="numeric">${e.statisticsCount ?? 0}</td>
       <td class="numeric">${e.statsShortCount ?? 0}</td>
@@ -400,8 +399,6 @@ export async function loadEntityFilters(selectedIntegration: string, selectedDom
 
 export async function loadEntities(
   args: EntityFetchArgs & {
-    currentLimit: number;
-    page: number;
     onSortChange: (sortBy: EntitySortKey, order: EntitySortOrder) => void;
   },
 ): Promise<void> {
@@ -419,7 +416,7 @@ export async function loadEntities(
     const entities = cachedResult ? cachedResult.entities : await fetchEntitiesListCached(args);
 
     clearSelectedEntities();
-    const tableHtml = buildEntitiesTableHtml(entities, args.currentLimit, args.sortBy, args.order, args.currentLimit);
+    const tableHtml = buildEntitiesTableHtml(entities, args.limit, args.sortBy, args.order);
     const summaryHtml = '<div id="entities-summary" class="table-summary">Loading...</div>';
     container.innerHTML = `${summaryHtml}${tableHtml}`;
     bindEntityTableEvents(args.sortBy, args.order, args.onSortChange);
@@ -434,7 +431,7 @@ export async function loadEntities(
       cachedGlobalTotals = { totalCount: totals.totalCount, totalEstimatedSizeBytes: totals.totalEstimatedSizeBytes };
     }
 
-    renderEntityPagination(totals.totalCount, args.page, args.currentLimit);
+    renderEntityPagination(totals.totalCount, (args.limit > 0) ? (args.offset / args.limit) + 1 : 0, args.limit);
 
     if (!cachedDataSize) {
       const tablesResponse = await fetchTablesData();
@@ -454,7 +451,9 @@ export async function loadEntities(
 
     const summaryEl = document.getElementById('entities-summary');
     if (summaryEl && cachedDataSize !== null) {
-      summaryEl.innerHTML = `SQLite Data: <strong>${formatSizeBytes(cachedDataSize)}</strong> · Selected entities: <strong>${totals.totalCount}</strong> (<strong>${formatSizeBytes(totals.totalEstimatedSizeBytes)}</strong>) · All entities: <strong>${cachedGlobalTotals?.totalCount ?? 0}</strong> (<strong>${formatSizeBytes(cachedGlobalTotals?.totalEstimatedSizeBytes ?? 0)}</strong>)`;
+      summaryEl.innerHTML = `SQLite Data: <strong>${formatSizeBytes(cachedDataSize)}</strong>`
+      if (totals.totalCount && (totals.totalCount != cachedGlobalTotals?.totalCount))  summaryEl.innerHTML += ` · Filtered entities: <strong>${totals.totalCount}</strong> (<strong>${formatSizeBytes(totals.totalEstimatedSizeBytes)}</strong>)`
+      if (cachedGlobalTotals?.totalCount)  summaryEl.innerHTML += ` · All entities: <strong>${cachedGlobalTotals?.totalCount ?? 0}</strong> (<strong>${formatSizeBytes(cachedGlobalTotals?.totalEstimatedSizeBytes ?? 0)}</strong>)`;
     }
   } catch (error) {
     container.innerHTML = `<div class="error">Error: ${escapeHtml((error as Error).message)}</div>`;

@@ -1,5 +1,5 @@
 name: "SQLite HA DB Usage"
-version: "1.0.14"
+version: "1.0.15"
 slug: "db-usage"
 description: "Inspect Home Assistant recorder database usage. Only for SQLite databases."
 arch:

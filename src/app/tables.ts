@@ -62,9 +62,9 @@ function renderTables(): void {
       <thead>
         <tr>
           <th class="sortable" data-sort="name">Table${tableSortKey === 'name' ? (tableSortAscending ? ' ▲' : ' ▼') : ''}</th>
-          <th class="sortable" data-sort="size">Size${tableSortKey === 'size' ? (tableSortAscending ? ' ▲' : ' ▼') : ''}</th>
-          <th>Payload</th>
-          <th>Count</th>
+          <th class="sortable" data-sort="size" title="Physical size of the table (with data and empty space)">Size${tableSortKey === 'size' ? (tableSortAscending ? ' ▲' : ' ▼') : ''}</th>
+          <th title="Size of actual data (used space only)">Payload</th>
+          <th title="Number of rows in the table">Count</th>
         </tr>
       </thead>
       <tbody>

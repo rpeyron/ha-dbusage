@@ -1,6 +1,10 @@
-# HA DB Insights - Home Assistant Database Analysis Add-on
+# HA DB Usage - Home Assistant Database Analysis Add-on
 
-A lightweight web UI addon to inspect Home Assistant recorder database usage, providing insights into disk space consumption by tables and entities, along with database cleanup guidance.
+A lightweight web UI addon to inspect Home Assistant recorder database usage, providing insights into disk space consumption by tables and entities, along with database cleanup guidance. It works only for SQLite databases.
+
+> [!NOTE]
+> This addon was vibe-coded for most part with Github Copilot. I reviewed and tested for my personal use, but not sure I will maintain it.
+
 
 ## Features
 
@@ -9,6 +13,8 @@ A lightweight web UI addon to inspect Home Assistant recorder database usage, pr
 - 🔍 **Entity Insights**: Analyze entity storage with filters, pagination, estimated size, total estimated entity size, and data-only totals
 - 🔌 **Integration & Domain Summary**: Group entity storage by integration and domain, showing percent of total data use
 - 🏠 **Home Assistant Integration**: Direct links to history and developer tools
+
+![](doc/dbusage_entities.jpg)
 
 
 ## Installation

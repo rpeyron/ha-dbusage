@@ -11,7 +11,7 @@ type Tab = 'tables' | 'entities' | 'integrations' | 'domains' | 'cleanup';
 const KNOWN_TABS: Tab[] = ['tables', 'entities', 'integrations', 'domains', 'cleanup'];
 const ENTITY_LIMIT_OPTIONS = [10, 20, 50, 100, 500, 0] as const;
 
-let currentTab: Tab = 'tables';
+let currentTab: Tab = 'cleanup';
 let currentLimit = 50;
 let entityFilter = '';
 let selectedIntegration = '';
@@ -21,10 +21,10 @@ let entitySortBy: EntitySortKey = 'estimatedSizeBytes';
 let entitySortOrder: EntitySortOrder = 'desc';
 let entityFilterDebounceTimer: number | undefined;
 
-function parseHash(): { tab: Tab; filter: string; integration: string; domain: string; limit: number; page: number; sortBy: EntitySortKey; order: EntitySortOrder } {
+function parseHash(): { tab: Tab; filter: string; integration: string; domain: string; limit?: number; page: number; sortBy: EntitySortKey; order: EntitySortOrder } {
   const hash = window.location.hash.slice(1);
   if (!hash) {
-    return { tab: 'tables', filter: '', integration: '', domain: '', limit: 50, page: 0, sortBy: 'estimatedSizeBytes', order: 'desc' };
+    return { tab: 'cleanup', filter: '', integration: '', domain: '', page: 0, sortBy: 'estimatedSizeBytes', order: 'desc' };
   }
 
   const [tabPart, query = ''] = hash.split('?');
@@ -176,7 +176,7 @@ function attachGlobalHandlers(): void {
     entityFilter = hashState.filter;
     selectedIntegration = hashState.integration;
     selectedDomain = hashState.domain;
-    currentLimit = hashState.limit;
+    currentLimit = hashState.limit || 50;
     entityPage = hashState.page;
     entitySortBy = hashState.sortBy;
     entitySortOrder = hashState.order;
@@ -200,8 +200,6 @@ function loadEntitiesState(): Promise<void> {
     order: entitySortOrder,
     integration: selectedIntegration,
     domain: selectedDomain,
-    currentLimit,
-    page: entityPage,
     onSortChange: (sortBy, order) => {
       entitySortBy = sortBy;
       entitySortOrder = order;
@@ -307,7 +305,7 @@ async function init(): Promise<void> {
   entityFilter = hashState.filter;
   selectedIntegration = hashState.integration;
   selectedDomain = hashState.domain;
-  currentLimit = hashState.limit;
+  currentLimit = hashState.limit || 50;
   entityPage = hashState.page;
   entitySortBy = hashState.sortBy;
   entitySortOrder = hashState.order;
